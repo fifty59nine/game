@@ -8,6 +8,8 @@ use dungeon_sdk::types::*;
 
 use super::Game;
 
+pub const PROTO_ID: u64 = 1;
+
 pub struct Server {
     host: String,
 }
@@ -71,6 +73,13 @@ impl Server {
 
     fn handle_request(request: &str, game: Arc<Mutex<Game>>, addr: &str) -> String {
         if let Ok(req) = serde_json::from_str::<Request>(request) {
+            if req.proto_id != PROTO_ID {
+                let resp = Response {
+                    successful: false,
+                    message: String::from("Помилка! Неправильний ID протоколу!"),
+                };
+                return serde_json::to_string(&resp).unwrap();
+            }
             let resp = match req.body {
                 Method::Ping => Ok(String::from("Ping")),
                 Method::Connect(data) => {

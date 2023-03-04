@@ -1,5 +1,5 @@
 use dungeon_sdk::client::Connector;
-use std::io::{stdin, stdout, Error};
+use std::io::{stdin, stdout, Error, Write};
 use std::{thread, time::Duration};
 use tui::text::Text;
 use tui::widgets::Paragraph;
@@ -16,6 +16,8 @@ use tui::{
     widgets::{Block, Borders, Wrap},
     Terminal,
 };
+
+pub const PROTO_ID: u64 = 1;
 
 fn main() -> Result<(), Error> {
     let c = get_connection();
@@ -65,20 +67,26 @@ fn menu(c: Connector) -> Result<(), Error> {
 }
 
 fn get_connection() -> Connector {
-    println!("Ввкaжіть айпі серверу до якого бажаєте підключитись");
+    print!("Ввкaжіть айпі серверу до якого бажаєте підключитись >>> ");
     let (mut server_ip, mut username, mut password) = (String::new(), String::new(), String::new());
-    let _ = stdin().read_line(&mut server_ip);
-    let mut con = Connector::new(server_ip).unwrap_or_else(|e| {
+    let _ = stdout().flush();
+    stdin()
+        .read_line(&mut server_ip)
+        .expect("Помилка зчитування!");
+    let mut con = Connector::new(server_ip, PROTO_ID).unwrap_or_else(|e| {
         println!("{}", e);
         std::process::exit(-1);
     });
 
-    println!(
-        "Вам потрібно авторизуватись! Введіть ваш логін(або придумайте, якщо не реєтрувались):"
+    print!(
+        "\nВам потрібно авторизуватись! Введіть ваш логін(або придумайте, якщо не реєтрувались): "
     );
-    let _ = stdin().read_line(&mut username);
-    println!("Пароль: ");
-    let _ = stdin().read_line(&mut password);
+    let _ = stdout().flush();
+    stdin()
+        .read_line(&mut username)
+        .expect("Помилка зчитування!");
+    let _ = stdout().flush();
+    password = rpassword::prompt_password("Пароль: ").expect("Помилка зчитування!");
 
     con.auth(username.trim().to_string(), password.trim().to_string());
     println!("{}", con.connect().message);

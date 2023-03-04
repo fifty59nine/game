@@ -8,21 +8,24 @@ pub struct Connector {
     /// IP:Port
     pub server: String,
     pub username: String,
+    pub proto_id: u64,
     password: String,
     is_conn: bool,
 }
 
 impl Connector {
     /// `server` - IP:PORT
-    pub fn new(server: String) -> Result<Self, String> {
+    /// `proto_id` - ID of protocol. Should be same on server.
+    pub fn new(server: String, proto_id: u64) -> Result<Self, String> {
         let con = Self {
             server: server.trim().to_string(),
             username: String::new(),
+            proto_id,
             password: String::new(),
             is_conn: false,
         };
 
-        let ping_res = con.request(Request::new(Method::Ping, None));
+        let ping_res = con.request(Request::new(Method::Ping, con.proto_id.clone(), None));
         if ping_res.successful {
             Ok(con)
         } else {
@@ -38,6 +41,7 @@ impl Connector {
     pub fn connect(&mut self) -> Response {
         let resp = self.request(Request::new(
             Method::Connect((self.username.clone(), self.password.clone())),
+            self.proto_id.clone(),
             None,
         ));
         if resp.successful {
@@ -49,6 +53,7 @@ impl Connector {
     pub fn get_stats(&self) -> Result<Player, String> {
         let resp = self.request(Request::new(
             Method::GetStats,
+            self.proto_id.clone(),
             Some(self.username.to_string()),
         ));
         if resp.successful {
